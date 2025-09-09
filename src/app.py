@@ -61,8 +61,8 @@ async def lifespan(app: FastAPI):
 
 # Initialize FastAPI app
 app = FastAPI(
-    title="RAG Thesis API",
-    description="RESTful API for RAG system querying PhD thesis content",
+    title="Yu Wang's PhD Thesis Assistant API",
+    description="Personal AI companion for exploring and discussing Yu Wang's doctoral research",
     version="1.0.0",
     lifespan=lifespan
 )

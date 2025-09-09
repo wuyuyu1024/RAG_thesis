@@ -12,7 +12,7 @@ from utils.config import GEMINI_API_KEY, DEBUG
 def generate_answer_single(query: str, retrial_results: List[str], 
                           memory: Optional[DialogMemory] = None) -> str:
     """Generate a single answer using Gemini AI with retrieved documents."""
-    prompt = "You are an expert in computer science specializing in information visualization and machine learning. You aim to answer the user's query about a PhD thesis, using the following retrieved Latex documents as the extended knowledge, but not limit to this. Do not mention you are referring to these documents.\n\n"
+    prompt = "You are an expert in computer science specializing in information visualization and machine learning. You aim to answer the user's query about a PhD thesis, using the following retrieved Latex documents as the extended knowledge, but not limit to this. Do not mention you are referring to these documents.\nAlso remove the latex format from the context, replace the format with markdown if needed.\n\n"
     
     # Add conversation context if memory exists
     if memory and memory.has_history():
