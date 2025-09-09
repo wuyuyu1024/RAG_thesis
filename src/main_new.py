@@ -41,9 +41,9 @@ def main():
             except ValueError:
                 print("Invalid weight format, using default 0.7")
         
-        # Ask about reranking (now enabled by default)
-        reranking_input = input("Enable cross-encoder reranking? (y/n, default y): ").strip().lower()
-        use_reranking = reranking_input not in ['n', 'no', '0', 'false']
+        # Ask about reranking
+        reranking_input = input("Enable cross-encoder reranking? (y/n, default n): ").strip().lower()
+        use_reranking = reranking_input in ['y', 'yes', '1', 'true']
         
         rerank_model = 'cross-encoder/ms-marco-MiniLM-L-6-v2'  # default
         if use_reranking:
