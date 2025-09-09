@@ -5,7 +5,11 @@ import dotenv
 import os
 import sys
 from dataclasses import dataclass
-import json
+import json 
+import re
+from sentence_transformers import CrossEncoder
+
+DEBUG = True
 
 dotenv.load_dotenv()
 if GEMINI_API_KEY := os.getenv("GEMINI_API_KEY") is None:
@@ -39,8 +43,18 @@ def query_db(query: str, n_results: int, collection: chromadb.Collection):
     assert n_results > 0, "Number of results must be greater than 0"
     assert isinstance(query, str), "Query must be a string"
 
-    results = collection.query(query_texts=[query], n_results=n_results)
-    return results
+    results = collection.query(query_texts=[query], n_results=n_results*3)['documents'][0]
+    reranked_results = rerank_cross_encoder(query, results)[:n_results]
+    print('raw results:', results, '\n')
+    print('reranked results:', reranked_results)
+    return reranked_results
+
+
+def rerank_cross_encoder(query: str, results: list[str]) -> list[str]:
+    model = CrossEncoder('cross-encoder/ms-marco-MiniLM-L-6-v2')
+    scores = model.predict([(query, doc) for doc in results])
+    ranked_results = [doc for _, doc in sorted(zip(scores, results), reverse=True)]
+    return ranked_results
 
 def generate_answer_single(query: str, retrial_results: list[str]):
 
@@ -61,7 +75,7 @@ def generate_answer_single(query: str, retrial_results: list[str]):
     )
 
     anwser = response.text.strip()
-    print("AI Response:", anwser)
+    print("Answer:", anwser)
     return anwser
 
 
@@ -96,12 +110,22 @@ def find_citation(query: str, retrial_results: str) -> list[str] | None:
         config=types.GenerateContentConfig(
             temperature=0.1,
             max_output_tokens=100,
-            system_instruction= "You should find the citation keys from the .tex document related to the query. Output the keys in a single line, separated by commas. If no keys are found, output 'No keys found'."
+            system_instruction= "You should find the citation keys from the .tex document related to the query. They are normally within \\citep{...} commands. Output the keys in a single line, separated by commas. If no keys are found, output 'No keys found'."
         )
     )
     if response.text.strip() == "No keys found":
         return None
     return response.text.strip().split(",")
+
+# def find_citation(retrial_results: str) -> list[str] | None:
+#     ## get citation keys using re
+#     citation_keys = []
+#     for chunk in retrial_results:
+#         matches = re.findall(r"\\cite*{([^}]+)}", chunk)
+#         ## deal with multiple citations
+#         if matches:
+#             citation_keys.extend(matches)
+#     return citation_keys
 
 def find_reference(keys: list[str], bib='data/bib_entries.json') -> str:
     refs = []
@@ -119,25 +143,25 @@ def find_reference(keys: list[str], bib='data/bib_entries.json') -> str:
 
 def generate_answer_with_citation(query: str, collection: chromadb.Collection, n_results: int = 3):
     
-    retrial_results = query_db(query, n_results, collection)['documents'][0]
+    retrial_results = query_db(query, n_results, collection)
     ## check if the query requires a reference
     if not check_reference(query):
         anwser = generate_answer_single(query, retrial_results)
-        print("Answer:", anwser)
+        # print("Answer:", anwser)
     else:
         citations_keys = find_citation(query, retrial_results)
         if citations_keys is None:
-            print("No citations found for the query.")
+            # print("No citations found for the query.")
             anwser = generate_answer_single(query, retrial_results)
             # print("Answer:", anwser)
         else:
-            print("Citations keys found:", citations_keys)
+            # print("Citations keys found:", citations_keys)
             references = find_reference(citations_keys)
             if not references:
-                print("No references found for the citation keys.")
+                # print("No references found for the citation keys.")
                 anwser = generate_answer_single(query, retrial_results)
             else:
-                print("References found:", references)
+                # print("References found:", references)
                 refs = "\n".join(references) + "NOTE: DONT FILL IN EXTRA INFORMATION ABOUT THE REFERENCES, JUST OUTPUT THEM AS THEY ARE."
                 retrial_results.append(f"\nReferences:\n{refs}")
                 
@@ -153,6 +177,7 @@ if __name__ == "__main__":
             print("Exiting the program.")
             break
         n_results = int(input("Enter number of results to return: "))
+        # n_results = 5
         generate_answer_with_citation(query, collection, n_results)
  
 
