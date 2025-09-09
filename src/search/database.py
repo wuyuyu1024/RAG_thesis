@@ -1,11 +1,17 @@
 """ChromaDB database setup and management."""
 
+import os
 import chromadb
 from utils.config import DEBUG
 
 
-def build_db(filename: str = "./data/chunks.txt"):
+def build_db(filename: str = None):
     """Build and populate ChromaDB collection from text chunks."""
+    if filename is None:
+        # Default to data/chunks.txt in the project root
+        project_root = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+        filename = os.path.join(project_root, "data", "chunks.txt")
+    
     chromadb_client = chromadb.Client()
     print("ChromaDB client initialized successfully.")
 

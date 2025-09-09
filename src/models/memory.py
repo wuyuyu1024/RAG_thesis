@@ -2,6 +2,7 @@
 
 from dataclasses import dataclass
 from typing import List, Optional
+from datetime import datetime
 
 
 @dataclass
@@ -11,6 +12,7 @@ class DialogTurn:
     answer: str
     retrieved_docs: List[str]
     citations: Optional[List[str]] = None
+    timestamp: Optional[str] = None
 
 
 class DialogMemory:
@@ -21,9 +23,11 @@ class DialogMemory:
         self.max_turns = max_turns
     
     def add_turn(self, query: str, answer: str, retrieved_docs: List[str], 
-                 citations: Optional[List[str]] = None):
+                 citations: Optional[List[str]] = None, timestamp: Optional[str] = None):
         """Add a new conversation turn to memory."""
-        turn = DialogTurn(query, answer, retrieved_docs, citations)
+        if timestamp is None:
+            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        turn = DialogTurn(query, answer, retrieved_docs, citations, timestamp)
         self.turns.append(turn)
         
         # Keep only the last max_turns
@@ -48,3 +52,7 @@ class DialogMemory:
     def has_history(self) -> bool:
         """Check if there is any conversation history."""
         return len(self.turns) > 0
+    
+    def clear(self):
+        """Clear all conversation history."""
+        self.turns.clear()

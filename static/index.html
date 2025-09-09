@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RAG Thesis Chat</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        .chat-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
+        }
+        
+        .chat-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            position: relative;
+        }
+        
+        .chat-header h1 {
+            font-size: 1.8em;
+            margin-bottom: 5px;
+        }
+        
+        .chat-header p {
+            opacity: 0.9;
+            font-size: 0.9em;
+        }
+        
+        .settings-icon {
+            position: absolute;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            padding: 10px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 18px;
+            transition: background-color 0.3s ease;
+        }
+        
+        .settings-icon:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        
+        .settings-panel {
+            position: absolute;
+            top: 100%;
+            right: 20px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+            padding: 20px;
+            width: 300px;
+            z-index: 1000;
+            display: none;
+            color: #333;
+        }
+        
+        .settings-panel.show {
+            display: block;
+        }
+        
+        .settings-group {
+            margin-bottom: 15px;
+        }
+        
+        .settings-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            font-size: 14px;
+        }
+        
+        .settings-group input, .settings-group select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        
+        .settings-group small {
+            color: #666;
+            font-size: 12px;
+        }
+        
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            background: #f8f9fa;
+        }
+        
+        .message {
+            margin-bottom: 20px;
+            max-width: 80%;
+            animation: fadeIn 0.3s ease-in;
+        }
+        
+        .message.user {
+            margin-left: auto;
+        }
+        
+        .message.assistant {
+            margin-right: auto;
+        }
+        
+        .message-bubble {
+            padding: 12px 18px;
+            border-radius: 18px;
+            word-wrap: break-word;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+        }
+        
+        .message.user .message-bubble {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-bottom-right-radius: 5px;
+        }
+        
+        .message.assistant .message-bubble {
+            background: white;
+            color: #333;
+            border: 1px solid #e1e5e9;
+            border-bottom-left-radius: 5px;
+        }
+        
+        .message-meta {
+            font-size: 11px;
+            color: #666;
+            margin-top: 5px;
+            text-align: right;
+        }
+        
+        .message.user .message-meta {
+            text-align: right;
+        }
+        
+        .message.assistant .message-meta {
+            text-align: left;
+        }
+        
+        .typing-indicator {
+            display: none;
+            margin: 20px 0;
+            max-width: 80%;
+        }
+        
+        .typing-indicator.show {
+            display: block;
+            animation: fadeIn 0.3s ease-in;
+        }
+        
+        .typing-bubble {
+            background: white;
+            border: 1px solid #e1e5e9;
+            border-radius: 18px;
+            border-bottom-left-radius: 5px;
+            padding: 12px 18px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .typing-dots {
+            display: flex;
+            gap: 3px;
+        }
+        
+        .typing-dots span {
+            width: 8px;
+            height: 8px;
+            background: #999;
+            border-radius: 50%;
+            animation: typing 1.4s infinite ease-in-out;
+        }
+        
+        .typing-dots span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+        
+        .typing-dots span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+        
+        .chat-input {
+            padding: 20px;
+            background: white;
+            border-top: 1px solid #e1e5e9;
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
+        }
+        
+        .input-container {
+            display: flex;
+            gap: 10px;
+            align-items: end;
+        }
+        
+        .message-input {
+            flex: 1;
+            border: 1px solid #e1e5e9;
+            border-radius: 20px;
+            padding: 12px 18px;
+            font-size: 16px;
+            resize: none;
+            min-height: 20px;
+            max-height: 100px;
+            outline: none;
+            font-family: inherit;
+            line-height: 1.4;
+        }
+        
+        .message-input:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        .send-button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 45px;
+            height: 45px;
+            cursor: pointer;
+            font-size: 18px;
+            transition: transform 0.2s ease, opacity 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .send-button:hover:not(:disabled) {
+            transform: scale(1.05);
+        }
+        
+        .send-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .clear-button {
+            background: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 20px;
+            padding: 8px 16px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: background-color 0.2s ease;
+        }
+        
+        .clear-button:hover {
+            background: #c82333;
+        }
+        
+        .welcome-message {
+            text-align: center;
+            color: #666;
+            padding: 40px 20px;
+            font-style: italic;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes typing {
+            0%, 80%, 100% { transform: scale(0.8); opacity: 0.5; }
+            40% { transform: scale(1); opacity: 1; }
+        }
+        
+        @media (max-width: 768px) {
+            .chat-container {
+                height: 100vh;
+                border-radius: 0;
+            }
+            
+            .message {
+                max-width: 90%;
+            }
+            
+            .settings-panel {
+                right: 10px;
+                left: 10px;
+                width: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-header">
+            <h1>RAG Thesis Assistant</h1>
+            <p>Ask questions about decision maps and machine learning</p>
+            <button class="settings-icon" onclick="toggleSettings()">⚙️</button>
+            <div class="settings-panel" id="settingsPanel">
+                <h3 style="margin-bottom: 15px;">Chat Settings</h3>
+                <div class="settings-group">
+                    <label for="n_results">Number of Results</label>
+                    <input type="number" id="n_results" value="5" min="1" max="20">
+                </div>
+                <div class="settings-group">
+                    <label for="embedding_weight">Search Balance</label>
+                    <input type="range" id="embedding_weight" value="0.7" min="0" max="1" step="0.1" oninput="updateWeightDisplay()">
+                    <small>Current: <span id="weightValue">0.7</span> (0.0 = keyword, 1.0 = semantic)</small>
+                </div>
+                <div class="settings-group">
+                    <label for="use_reranking">Cross-encoder Reranking</label>
+                    <select id="use_reranking">
+                        <option value="true" selected>Enabled</option>
+                        <option value="false">Disabled</option>
+                    </select>
+                </div>
+                <div class="settings-group">
+                    <label for="rerank_model">Rerank Model</label>
+                    <select id="rerank_model">
+                        <option value="cross-encoder/ms-marco-MiniLM-L-6-v2" selected>MS MARCO MiniLM</option>
+                        <option value="cross-encoder/ms-marco-MiniLM-L-12-v2">MS MARCO MiniLM L12</option>
+                        <option value="cross-encoder/stsb-roberta-base">STSB RoBERTa</option>
+                    </select>
+                </div>
+                <button class="clear-button" onclick="clearConversation()">Clear Conversation</button>
+            </div>
+        </div>
+        
+        <div class="chat-messages" id="chatMessages">
+            <div class="welcome-message">
+                👋 Welcome! Ask me anything about decision maps, machine learning classification, or your thesis content.
+            </div>
+        </div>
+        
+        <div class="typing-indicator" id="typingIndicator">
+            <div class="typing-bubble">
+                <div class="typing-dots">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+                <span style="margin-left: 10px; color: #666;">Assistant is thinking...</span>
+            </div>
+        </div>
+        
+        <div class="chat-input">
+            <div class="input-container">
+                <textarea 
+                    id="messageInput" 
+                    class="message-input" 
+                    placeholder="Type your question here..." 
+                    rows="1"
+                    onkeydown="handleKeyPress(event)"
+                    oninput="adjustTextareaHeight(this)"
+                ></textarea>
+                <button class="send-button" id="sendButton" onclick="sendMessage()">
+                    ➤
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let conversationHistory = [];
+        
+        function toggleSettings() {
+            const panel = document.getElementById('settingsPanel');
+            panel.classList.toggle('show');
+        }
+        
+        function updateWeightDisplay() {
+            const value = document.getElementById('embedding_weight').value;
+            document.getElementById('weightValue').textContent = value;
+        }
+        
+        function adjustTextareaHeight(textarea) {
+            textarea.style.height = 'auto';
+            textarea.style.height = Math.min(textarea.scrollHeight, 100) + 'px';
+        }
+        
+        function handleKeyPress(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                sendMessage();
+            }
+        }
+        
+        function formatTimestamp() {
+            return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        }
+        
+        function addMessage(content, isUser, timestamp = null) {
+            const messagesContainer = document.getElementById('chatMessages');
+            const welcomeMessage = messagesContainer.querySelector('.welcome-message');
+            
+            if (welcomeMessage) {
+                welcomeMessage.remove();
+            }
+            
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${isUser ? 'user' : 'assistant'}`;
+            
+            const bubbleDiv = document.createElement('div');
+            bubbleDiv.className = 'message-bubble';
+            bubbleDiv.textContent = content;
+            
+            const metaDiv = document.createElement('div');
+            metaDiv.className = 'message-meta';
+            metaDiv.textContent = timestamp || formatTimestamp();
+            
+            messageDiv.appendChild(bubbleDiv);
+            messageDiv.appendChild(metaDiv);
+            messagesContainer.appendChild(messageDiv);
+            
+            // Scroll to bottom
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            
+            return messageDiv;
+        }
+        
+        function showTypingIndicator() {
+            document.getElementById('typingIndicator').classList.add('show');
+            const messagesContainer = document.getElementById('chatMessages');
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+        
+        function hideTypingIndicator() {
+            document.getElementById('typingIndicator').classList.remove('show');
+        }
+        
+        async function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const sendButton = document.getElementById('sendButton');
+            const message = input.value.trim();
+            
+            if (!message) return;
+            
+            // Add user message
+            addMessage(message, true);
+            conversationHistory.push({ role: 'user', content: message, timestamp: formatTimestamp() });
+            
+            // Clear input and disable send button
+            input.value = '';
+            input.style.height = 'auto';
+            sendButton.disabled = true;
+            
+            // Show typing indicator
+            showTypingIndicator();
+            
+            try {
+                const response = await fetch('/query', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        query: message,
+                        n_results: parseInt(document.getElementById('n_results').value),
+                        embedding_weight: parseFloat(document.getElementById('embedding_weight').value),
+                        use_reranking: document.getElementById('use_reranking').value === 'true',
+                        rerank_model: document.getElementById('rerank_model').value
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const result = await response.json();
+                
+                // Hide typing indicator
+                hideTypingIndicator();
+                
+                // Add assistant response
+                addMessage(result.answer, false);
+                conversationHistory.push({ 
+                    role: 'assistant', 
+                    content: result.answer, 
+                    timestamp: formatTimestamp(),
+                    memory_turns: result.memory_turns 
+                });
+                
+            } catch (error) {
+                hideTypingIndicator();
+                addMessage(`❌ Sorry, I encountered an error: ${error.message}`, false);
+                console.error('Chat error:', error);
+            } finally {
+                // Re-enable send button
+                sendButton.disabled = false;
+                input.focus();
+            }
+        }
+        
+        async function clearConversation() {
+            if (conversationHistory.length === 0) return;
+            
+            if (confirm('Are you sure you want to clear the conversation history?')) {
+                try {
+                    await fetch('/memory/clear', { method: 'POST' });
+                    
+                    // Clear UI
+                    const messagesContainer = document.getElementById('chatMessages');
+                    messagesContainer.innerHTML = `
+                        <div class="welcome-message">
+                            👋 Welcome! Ask me anything about decision maps, machine learning classification, or your thesis content.
+                        </div>
+                    `;
+                    
+                    conversationHistory = [];
+                    
+                    // Hide settings panel
+                    document.getElementById('settingsPanel').classList.remove('show');
+                    
+                } catch (error) {
+                    console.error('Error clearing conversation:', error);
+                    alert('Failed to clear conversation. Please try again.');
+                }
+            }
+        }
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('messageInput').focus();
+            
+            // Close settings panel when clicking outside
+            document.addEventListener('click', function(event) {
+                const settingsPanel = document.getElementById('settingsPanel');
+                const settingsIcon = document.querySelector('.settings-icon');
+                
+                if (!settingsPanel.contains(event.target) && !settingsIcon.contains(event.target)) {
+                    settingsPanel.classList.remove('show');
+                }
+            });
+        });
+    </script>
+</body>
+</html>

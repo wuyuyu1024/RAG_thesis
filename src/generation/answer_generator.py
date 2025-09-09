@@ -57,7 +57,7 @@ def generate_answer_with_citation(query: str, collection: chromadb.Collection,
             if not references:
                 answer = generate_answer_single(query, retrial_results, memory)
             else:
-                refs = "\n".join(references) + "NOTE: DONT FILL IN EXTRA INFORMATION ABOUT THE REFERENCES, JUST OUTPUT THEM AS THEY ARE."
+                refs = "\n".join(references) + "\nNOTE: DONT FILL IN EXTRA INFORMATION ABOUT THE REFERENCES, JUST OUTPUT THEM AS THEY ARE. ASLO DONT MENTION THE CITATION KEYS IF YOU USE THEM IN THE ANSWER."
                 retrial_results.append(f"\nReferences:\n{refs}")
                 
                 answer = generate_answer_single(query, retrial_results=retrial_results, memory=memory)

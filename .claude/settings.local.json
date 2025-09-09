@@ -1,7 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "Bash(python:*)"
+      "Bash(python:*)",
+      "Bash(uv sync:*)",
+      "Bash(uv add:*)"
     ],
     "deny": [],
     "ask": []
