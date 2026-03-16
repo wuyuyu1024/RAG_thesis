@@ -1,15 +1,27 @@
 # RAG Thesis System
 
-This project is a retrieval-augmented generation (RAG) app for querying thesis content through a browser UI or a simple command-line interface. It builds an in-memory ChromaDB collection from thesis text chunks, combines semantic retrieval with BM25-style keyword scoring, optionally reranks results with a cross-encoder, and uses Gemini to generate the final answer.
+> A conversational interface for a long thesis and the kind friends who would rather ask questions than read the whole PDF.
+
+This project is a retrieval-augmented generation (RAG) app built around my PhD thesis at Utrecht University. It turns the thesis into something you can query through a browser UI or a simple command-line interface, using an in-memory ChromaDB collection, hybrid retrieval, optional cross-encoder reranking, and Gemini-generated answers.
+
+The source material is my Utrecht University PhD thesis: [thesis PDF](https://research-portal.uu.nl/ws/portalfiles/portal/266197286/thesis%20-%20684ee48bb78b1.pdf).
+
+This started after some friends basically told me, "I support you, but I am not reading all of that." Fair enough. So I gave the thesis a chat interface.
+
+## Why This Exists
+
+- The thesis is real.
+- The PDF is long.
+- `Ctrl+F` is helpful, but it has no patience for follow-up questions.
 
 ## Features
 
 - FastAPI backend with a browser-based chat interface
 - Hybrid retrieval that blends embedding search and keyword scoring
-- Optional cross-encoder reranking for better result ordering
+- Optional cross-encoder reranking for cleaner result ordering
 - Citation lookup from bibliography entries when the query calls for references
 - Conversation memory that keeps the last 10 turns
-- CLI entrypoint for local interactive use
+- CLI entrypoint for local interactive use, if the terminal is your preferred habitat
 
 ## Requirements
 
